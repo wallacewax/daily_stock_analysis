@@ -1,6 +1,6 @@
 name: 每日股票分析
-defaults:
-  on:
+
+on:
   # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
   schedule:
     - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
@@ -11,8 +11,8 @@ defaults:
       mode:
         description: '运行模式'
         required: true
-        默认: 'full'
-        输入: choice
+        default: 'full'
+        type: choice
         options:
           - full          # 完整分析（股票+大盘）
           - market-only   # 仅大盘复盘
@@ -56,7 +56,7 @@ jobs:
           # ==========================================
           # AI 配置
           # ==========================================
-          # Gemini AI（主选）
+          # Gemini AI（主选）- 已注释，强制使用 DeepSeek
           # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # GEMINI_MODEL: ${{ vars.GEMINI_MODEL || secrets.GEMINI_MODEL || 'gemini-3-flash-preview' }}
           # GEMINI_MODEL_FALLBACK: ${{ vars.GEMINI_MODEL_FALLBACK || secrets.GEMINI_MODEL_FALLBACK || 'gemini-2.5-flash' }}
@@ -65,7 +65,7 @@ jobs:
           # AIHubMix（优先于 OPENAI_API_KEY，自动适配 base_url，推荐国内用户）
           AIHUBMIX_KEY: ${{ secrets.AIHUBMIX_KEY }}
 
-          # OpenAI 兼容 API（备选）
+          # OpenAI 兼容 API（备选，这里用于连接 DeepSeek）
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || secrets.OPENAI_BASE_URL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || secrets.OPENAI_MODEL }}
