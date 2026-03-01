@@ -1,4 +1,4 @@
-name: 每日股票分析 (DeepSeek修复版)
+name: 每日股票分析 (DeepSeek适配版)
 
 on:
   schedule:
@@ -15,7 +15,7 @@ on:
           - market-only
           - stocks-only
       force_run:
-        description: '强制运行（跳过交易日检查）'
+        description: '强制运行'
         required: false
         default: false
         type: boolean
@@ -30,9 +30,6 @@ jobs:
     timeout-minutes: 30
     
     steps:
-      - name: 随机延迟
-        run: sleep $((RANDOM % 60))
-      
       - name: 检出代码
         uses: actions/checkout@v4
       
@@ -54,50 +51,43 @@ jobs:
       - name: 执行股票分析
         env:
           # ==========================================
-          # 核心修复：LiteLLM 配置 (强制指定 DeepSeek)
+          # 核心修复：强制指定使用 DeepSeek
           # ==========================================
-          # 告诉 LiteLLM 使用 openai 协议调用 deepseek-chat
+          # 1. 告诉程序使用 OpenAI 协议调用 deepseek-chat
           LITELLM_MODEL: 'openai/deepseek-chat'
           
-          # 具体的 API 配置
-          OPENAI_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          OPENAI_BASE_URL: 'https://api.deepseek.com'
-          OPENAI_MODEL: 'deepseek-chat'
+          # 2. 将你的 Secrets 映射到程序能识别的环境变量
+          # 左边是程序要的变量名 = 右边是你截图里设置的 Secret 名
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_API_BASE }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           
           # ==========================================
-          # 其他配置 (保持不变)
+          # 其他配置
           # ==========================================
-          # 数据源
           TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
           
-          # 搜索服务
-          BOCHA_API_KEYS: ${{ secrets.BOCHA_API_KEYS }}
-          TAVILY_API_KEYS: ${{ secrets.TAVILY_API_KEYS }}
-          
-          # 通知渠道
+          # 通知配置 (适配你的截图)
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-          WECHAT_WEBHOOK_URL: ${{ secrets.WECHAT_WEBHOOK_URL }}
-          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECEIVERS: ${{ secrets.EMAIL_RECEIVERS }}
           
           # 运行参数
-          STOCK_LIST: ${{ vars.STOCK_LIST || secrets.STOCK_LIST || '600519' }}
-          REPORT_TYPE: 'simple'
+          STOCK_LIST: ${{ secrets.STOCK_LIST }}
+          # 强制开启大盘分析，避免因为找不到股票列表而空跑
           MARKET_REVIEW_ENABLED: 'true'
+          REPORT_TYPE: 'simple'
           
         run: |
-          # 调试信息：打印关键变量状态（不打印 Key）
-          echo "================ 配置检查 ================"
+          # 调试打印：确认变量是否注入成功 (出于安全不打印 Key 的具体值)
+          echo "================ 调试信息 ================"
+          echo "正在连接 AI 模型..."
           echo "LITELLM_MODEL: $LITELLM_MODEL"
-          echo "OPENAI_BASE_URL: $OPENAI_BASE_URL"
-          if [ -n "$OPENAI_API_KEY" ]; then
-            echo "OPENAI_API_KEY: ✅ 已检测到 (长度: ${#OPENAI_API_KEY})"
+          echo "API Base: $OPENAI_BASE_URL"
+          echo "Model: $OPENAI_MODEL"
+          
+          if [ -z "$OPENAI_API_KEY" ]; then
+             echo "❌ 错误：未检测到 OPENAI_API_KEY，请检查 Secrets 配置！"
           else
-            echo "OPENAI_API_KEY: ❌ 未设置 (请在 Secrets 中添加 DEEPSEEK_API_KEY)"
+             echo "✅ 检测到 OPENAI_API_KEY (长度: ${#OPENAI_API_KEY})"
           fi
           echo "========================================"
 
@@ -108,7 +98,7 @@ jobs:
             FORCE_RUN_ARG="--force-run"
           fi
 
-          # 运行
+          # 运行程序
           if [ "$MODE" = "market-only" ]; then
             python main.py --market-review $FORCE_RUN_ARG
           elif [ "$MODE" = "stocks-only" ]; then
